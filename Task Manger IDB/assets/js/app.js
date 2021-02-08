@@ -6,6 +6,9 @@ const taskList = document.querySelector('.collection'); //The UL
 const clearBtn = document.querySelector('.clear-tasks'); //the all task clear button
 
 const reloadIcon = document.querySelector('.fa'); //the reload button at the top navigation 
+const orderBtn = document.querySelector('select');
+
+
 
 //DB variable 
 
@@ -63,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // create a new object with the form info
         let newTask = {
             taskname: taskInput.value,
+            date: Date.now()
         }
 
         // Insert the object into the database 
@@ -113,7 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const link = document.createElement('a');
                 // Add class and the x marker for a 
                 link.className = 'delete-item secondary-content';
-                link.innerHTML = '<i class="fa fa-remove"></i>';
+                link.innerHTML = `<i class="fa fa-remove"></i>
+                &nbsp;
+                <a href="edit.html?id=${cursor.value.id}"><i class="fa fa-edit"></i> </a>
+                `;
                 // Append link to li
                 li.appendChild(link);
                 // Append to UL 
@@ -121,6 +128,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 cursor.continue();
             }
         }
+    }
+
+    //clear button event listener    
+    clearBtn.addEventListener('click', clearAllTasks);
+    //clear tasks 
+    function clearAllTasks() {
+        //Create the transaction and object store
+        let transaction = DB.transaction("tasks","readwrite"); 
+        let tasks = transaction.objectStore("tasks");
+    
+        // clear the table
+        tasks.clear(); 
+        //repaint the UI
+        displayTaskList();
+    
+        console.log("Tasks Cleared !!!");
     }
 
     // Remove task event [event delegation]
@@ -147,18 +170,104 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    //clear button event listener   
-    clearBtn.addEventListener('click', clearAllTasks);
+    // ascending and descending sorting order
+    orderBtn.addEventListener('change', changeOrder);
 
-    //clear tasks 
-    function clearAllTasks() {
-        let transaction = DB.transaction("tasks", "readwrite");
-        let tasks = transaction.objectStore("tasks");
-        // clear the table.
-        tasks.clear();
-        displayTaskList();
-        console.log("Tasks Cleared !!!");
+    function changeOrder(){
+        // check which value order button was changed to
+        if (orderBtn.value == 'desc'){
+            descendingDisplayTaskList();
+        } else if (orderBtn.value == 'asc') {
+            ascendingDisplayTaskList();
+        } else {
+            return;
+        }
     }
+
+    function ascendingDisplayTaskList() {
+        // clear the previous task list
+        while (taskList.firstChild) {   
+            taskList.removeChild(taskList.firstChild);
+        }
+      
+        // create the index on date
+        let objectStore = DB.transaction('tasks').objectStore('tasks');
+        var dateIndex = objectStore.index('date');
+      
+        dateIndex.openCursor().onsuccess = function(e) {
+            // assign the current cursor
+            let cursor = e.target.result;
+      
+            if (cursor) {
+                // Create an li element when the user adds a task 
+                const li = document.createElement('li');
+                li.className = 'collection-item';
+                // add attribute for deletion / removeTask
+                li.setAttribute('data-task-id', cursor.value.id);
+                // Create text node and append it 
+                li.appendChild(document.createTextNode(cursor.value.taskname));
+                // Create new element for the link 
+                const link = document.createElement('a');
+                // Add class and the x marker for a 
+                link.className = 'delete-item secondary-content';
+                link.innerHTML = `
+                 <i class="fa fa-remove"></i>
+                &nbsp;
+                <a href="edit.html?id=${cursor.value.id}"><i class="fa fa-edit"></i> </a>
+                `;
+                // Append link to li
+                li.appendChild(link);
+                // Append to UL 
+                taskList.appendChild(li);
+
+                cursor.continue();
+            }
+        }
+    }
+
+    function descendingDisplayTaskList() {
+        // clear the previous task list
+        while (taskList.firstChild) {   
+            taskList.removeChild(taskList.firstChild);
+        }
+      
+        // create the index on date
+        let objectStore = DB.transaction('tasks').objectStore('tasks');
+        var dateIndex = objectStore.index('date');
+      
+        dateIndex.openCursor(null, 'prev').onsuccess = function(e) {
+            // assign the current cursor
+            let cursor = e.target.result;
+      
+            if (cursor) {
+                // Create an li element when the user adds a task 
+                const li = document.createElement('li');
+                li.className = 'collection-item';
+                // add attribute for deletion / removeTask
+                li.setAttribute('data-task-id', cursor.value.id);
+                // Create text node and append it 
+                li.appendChild(document.createTextNode(cursor.value.taskname));
+                // Create new element for the link 
+                const link = document.createElement('a');
+                // Add class and the x marker for a 
+                link.className = 'delete-item secondary-content';
+                link.innerHTML = `
+                 <i class="fa fa-remove"></i>
+                &nbsp;
+                <a href="edit.html?id=${cursor.value.id}"><i class="fa fa-edit"></i> </a>
+                `;
+                // Append link to li
+                li.appendChild(link);
+                // Append to UL 
+                taskList.appendChild(li);
+
+                cursor.continue();
+            }
+        }
+    }
+    
+});
+
 
 
 });
