@@ -4,6 +4,7 @@ const taskInput = document.querySelector('#task'); //the task input text field
 
 //read from q string 
 const urlParams = new URLSearchParams(window.location.search);
+console.log(urlParams);
 const id = Number(urlParams.get('id'));
 //DB
 var DB;
@@ -71,6 +72,21 @@ document.addEventListener('DOMContentLoaded', () => {
         2. Use the id on put method of index db
         
         */
+
+        var transaction = DB.transaction(['tasks'], 'readwrite');
+        var objectStore = transaction.objectStore('tasks');
+        var request = objectStore.get(id);
+
+        request.onsuccess = function(e) {
+            var task = e.target.result;
+            task.taskname = taskInput.value;
+
+            objectStore.put(task);
+        }
+
+        transaction.oncomplete = function(e) {
+            console.log("Successfully updated task");
+        }
 
         history.back();
     }
